@@ -2,6 +2,8 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLocation } from 'react-router-dom';
 import { SendIcon, PaperclipIcon, HeartIcon, CheckCircle2Icon, BrainCircuitIcon, ListTodoIcon, SparklesIcon, MoreVerticalIcon, BriefcaseIcon, GlobeIcon, FileTextIcon, FolderIcon, SearchIcon, ChevronDownIcon, SquareIcon, RotateCwIcon, PanelRightCloseIcon, PanelRightOpenIcon, FileIcon, ImageIcon, Loader2Icon, AlertCircleIcon } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { Badge } from '../../components/ui/Badge';
 import { api } from '../../lib/apiClient';
 
@@ -418,38 +420,86 @@ export function ChatPage() {
                     </div>
 
                     {/* Stage Content */}
-                    <div className="p-5 sm:p-6 bg-white min-h-[150px]" data-id="element-500">
+                    <div className="bg-white max-h-[65vh] overflow-y-auto" data-id="element-500">
                       <AnimatePresence mode="wait" data-id="element-501">
-                        <motion.div key={displayStage} initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }} transition={{ duration: 0.2 }} className="text-sm text-text-primary leading-relaxed whitespace-pre-wrap" data-id="element-502">
+                        <motion.div key={displayStage} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }} className="p-5 sm:p-6" data-id="element-502">
+
+                          {/* THINKING — pulsing dots */}
                           {displayStage === 'thinking' && (
-                            <div className="text-text-secondary italic border-l-2 border-primary/30 pl-4 py-1" data-id="element-503">
-                              {thinkingText}
+                            <div className="flex flex-col gap-4">
+                              <div className="flex items-center gap-3">
+                                <div className="flex gap-1">
+                                  {[0,1,2].map(i => (
+                                    <motion.div key={i} className="w-2 h-2 rounded-full bg-primary"
+                                      animate={{ scale: [1, 1.4, 1], opacity: [0.4, 1, 0.4] }}
+                                      transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.2 }} />
+                                  ))}
+                                </div>
+                                <span className="text-sm text-text-secondary font-medium">Analysing request...</span>
+                              </div>
+                              <div className="text-sm text-text-secondary italic border-l-2 border-primary/30 pl-4 py-1 leading-relaxed">
+                                {thinkingText}
+                              </div>
                             </div>
                           )}
+
+                          {/* PLANNING — animated log lines */}
                           {displayStage === 'planning' && (
-                            <div className="text-text-secondary font-mono text-xs leading-loose bg-slate-50 p-4 rounded-lg border border-slate-100" data-id="element-504">
-                              {planningText}
+                            <div className="space-y-2">
+                              {[
+                                { icon: '🔍', text: 'Head Router Agent classifying task...' },
+                                { icon: '⚡', text: `Specialist activated${msg.agentLabel ? `: ${msg.agentLabel}` : ''}` },
+                                { icon: '🚀', text: 'Executing task with full context...' },
+                              ].map((line, i) => (
+                                <motion.div key={i} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }}
+                                  transition={{ delay: i * 0.3, duration: 0.3 }}
+                                  className="flex items-center gap-3 text-xs font-mono bg-slate-50 border border-slate-100 rounded-lg px-4 py-2.5 text-slate-600">
+                                  <span>{line.icon}</span>
+                                  <span>{line.text}</span>
+                                  {i === 2 && (
+                                    <motion.span animate={{ opacity: [1,0,1] }} transition={{ duration: 0.8, repeat: Infinity }}
+                                      className="ml-auto text-primary font-bold">▋</motion.span>
+                                  )}
+                                </motion.div>
+                              ))}
                             </div>
                           )}
+
+                          {/* EXECUTING — markdown result */}
                           {displayStage === 'executing' && (
-                            <div className="prose prose-sm max-w-none prose-p:leading-relaxed prose-strong:text-text-primary prose-strong:font-semibold" data-id="element-505">
-                              {msg.taskStatus === 'failed' ? (
-                                <div className="flex items-center gap-2 text-red-500">
-                                  <AlertCircleIcon className="w-4 h-4 shrink-0" />
-                                  <span>{executingText}</span>
+                            msg.taskStatus === 'failed' ? (
+                              <div className="flex items-start gap-3 text-red-500 bg-red-50 border border-red-100 rounded-xl p-4">
+                                <AlertCircleIcon className="w-4 h-4 shrink-0 mt-0.5" />
+                                <span className="text-sm leading-relaxed">{executingText}</span>
+                              </div>
+                            ) : executingText ? (
+                              <div className="prose prose-sm max-w-none
+                                prose-headings:font-semibold prose-headings:text-text-primary prose-headings:mt-5 prose-headings:mb-2
+                                prose-h1:text-lg prose-h2:text-base prose-h3:text-sm
+                                prose-p:text-text-primary prose-p:leading-relaxed prose-p:my-2
+                                prose-li:text-text-primary prose-li:leading-relaxed
+                                prose-ul:my-2 prose-ol:my-2
+                                prose-strong:text-text-primary prose-strong:font-semibold
+                                prose-code:bg-slate-100 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-xs
+                                prose-blockquote:border-l-4 prose-blockquote:border-primary/30 prose-blockquote:pl-4 prose-blockquote:italic prose-blockquote:text-text-secondary">
+                                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                  {executingText}
+                                </ReactMarkdown>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-3 text-text-muted py-4">
+                                <div className="flex gap-1">
+                                  {[0,1,2].map(i => (
+                                    <motion.div key={i} className="w-1.5 h-1.5 rounded-full bg-primary/50"
+                                      animate={{ scale: [1, 1.5, 1], opacity: [0.3, 1, 0.3] }}
+                                      transition={{ duration: 1, repeat: Infinity, delay: i * 0.15 }} />
+                                  ))}
                                 </div>
-                              ) : executingText ? (
-                                executingText.split('\n\n').map((paragraph, i) => (
-                                  <p key={i} dangerouslySetInnerHTML={{ __html: paragraph.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\*(.*?)\*/g, '<em>$1</em>') }} data-id="element-506" />
-                                ))
-                              ) : (
-                                <div className="flex items-center gap-2 text-text-muted">
-                                  <Loader2Icon className="w-4 h-4 animate-spin" />
-                                  <span>Waiting for agent response...</span>
-                                </div>
-                              )}
-                            </div>
+                                <span className="text-sm">Agent is preparing your response...</span>
+                              </div>
+                            )
                           )}
+
                         </motion.div>
                       </AnimatePresence>
                     </div>
