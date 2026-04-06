@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, Link } from 'react-router-dom';
 import { Card } from '../../components/ui/Card';
@@ -72,6 +73,8 @@ const FILE_LIST = [{
   type: 'slide'
 }];
 export function AppHomePage() {
+  const { user } = useAuth();
+  const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'there';
   const navigate = useNavigate();
   const date = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
@@ -244,7 +247,7 @@ export function AppHomePage() {
       <motion.div {...stagger(0)} data-id="element-193">
         <p className="text-sm font-medium text-text-muted mb-1" data-id="element-194">{date}</p>
         <h1 className="text-3xl md:text-4xl font-heading font-bold text-text-primary" data-id="element-195">
-          {greeting}, Alex.
+          {greeting}, {userName}.
         </h1>
         <p className="text-text-secondary mt-1.5" data-id="element-196">
           What would you like to work on today?
@@ -253,27 +256,6 @@ export function AppHomePage() {
 
       {/* Mode Switcher + Prompt Composer */}
       <motion.div {...stagger(0.1)} className="max-w-3xl mx-auto space-y-4" data-id="element-197">
-        {/* Model Tier Selector */}
-        <div className="flex justify-center" data-id="element-198">
-          <div className="bg-cream p-1 rounded-full inline-flex overflow-x-auto hide-scrollbar max-w-full" data-id="element-199">
-            {(['lite', 'medium', 'complex'] as const).map(tier => {
-            const config = modelTiers[tier];
-            const isActive = activeModelTier === tier;
-            return <button key={tier} onClick={() => setActiveModelTier(tier)} className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all whitespace-nowrap ${isActive ? 'bg-white shadow-sm text-text-primary' : 'text-text-secondary hover:text-text-primary'}`} data-id="element-200">
-                  <config.icon className={`w-4 h-4 ${isActive ? config.color : ''}`} data-id="element-201" />
-                  <div className="flex flex-col items-start text-left" data-id="element-202">
-                    <span className="text-sm font-medium leading-none mb-0.5" data-id="element-203">
-                      {config.label}
-                    </span>
-                    <span className="text-[10px] text-text-muted leading-none" data-id="element-204">
-                      {config.subtitle}
-                    </span>
-                  </div>
-                </button>;
-          })}
-          </div>
-        </div>
-
         {/* Prompt Composer */}
         <div className="relative" data-id="element-205">
           {/* @ Mention Popup */}
@@ -351,7 +333,7 @@ export function AppHomePage() {
           <div className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary cursor-pointer transition-colors" data-id="element-233">
             <PaperclipIcon className="w-5 h-5" data-id="element-234" />
           </div>
-          <input ref={inputRef} type="text" value={inputValue} onChange={handleInputChange} onKeyDown={e => e.key === 'Enter' && handleStartChat()} placeholder="What would you like to work on today? (type @ to mention)" className="w-full bg-white border border-border rounded-2xl pl-12 pr-14 py-4 text-base shadow-soft focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" data-id="element-235" />
+          <input ref={inputRef} type="text" value={inputValue} onChange={handleInputChange} onKeyDown={e => { if (e.key === 'Enter' && !showAtPopup) handleStartChat(); }} placeholder="What would you like to work on today? (type @ to mention)" className="w-full bg-white border border-border rounded-2xl pl-12 pr-14 py-4 text-base shadow-soft focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" data-id="element-235" />
           <button onClick={handleStartChat} className={`absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-xl flex items-center justify-center transition-all ${inputValue.trim() ? 'bg-primary text-white shadow-sm' : 'bg-cream text-text-muted'}`} data-id="element-236">
             <SendIcon className="w-4 h-4 ml-0.5" data-id="element-237" />
           </button>

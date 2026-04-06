@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import { HomeIcon, InboxIcon, MessageSquareIcon, LayoutGridIcon, CheckSquareIcon, SearchIcon, GitBranchIcon, ArchiveIcon, ClockIcon, UsersIcon, ShieldCheckIcon, BarChart3Icon, SettingsIcon, BellIcon, MenuIcon, ChevronDownIcon, ChevronRightIcon, PlusIcon, PuzzleIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Logo } from '../ui/Logo';
@@ -29,6 +30,9 @@ const MOCK_SIDEBAR_WORKSPACES = [{
   name: 'Q4 OKR'
 }];
 export function AppLayout() {
+  const { user } = useAuth();
+  const fullName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
+  const initials = fullName.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isWorkspacesOpen, setIsWorkspacesOpen] = useState(true);
@@ -85,17 +89,17 @@ export function AppLayout() {
   };
   const SidebarContent = () => <div className="flex flex-col h-full bg-warm-white border-r border-border overflow-y-auto hide-scrollbar" data-id="element-66">
       <div className="p-4 flex flex-col gap-4 border-b border-border/30 sticky top-0 bg-warm-white/90 backdrop-blur-sm z-10" data-id="element-67">
-        <div className="flex justify-center" data-id="element-68">
+        <div className="flex justify-start" data-id="element-68">
           <Logo size="sm" data-id="element-69" />
         </div>
         <div className="flex items-center justify-between bg-white border border-border/50 rounded-xl p-2 cursor-pointer hover:border-primary/30 transition-colors" data-id="element-70">
           <div className="flex items-center gap-2.5" data-id="element-71">
             <div className="w-8 h-8 rounded-full bg-rose-light/30 border border-rose-light/50 flex items-center justify-center text-primary-dark font-heading font-bold text-xs" data-id="element-72">
-              AL
+              {initials}
             </div>
             <div className="flex flex-col" data-id="element-73">
               <span className="text-sm font-semibold text-text-primary leading-tight" data-id="element-74">
-                Alex L.
+                {fullName}
               </span>
               <span className="text-[10px] text-text-muted" data-id="element-75">
                 Personal Workspace
@@ -270,7 +274,7 @@ export function AppLayout() {
               <span className="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full border-2 border-white" data-id="element-136"></span>
             </button>
             <div className="w-9 h-9 rounded-full bg-rose-light/30 border border-rose-light/50 flex items-center justify-center text-primary-dark font-heading font-bold text-sm ml-1 cursor-pointer hover:shadow-sm transition-all" data-id="element-137">
-              AL
+              {initials}
             </div>
           </div>
         </header>

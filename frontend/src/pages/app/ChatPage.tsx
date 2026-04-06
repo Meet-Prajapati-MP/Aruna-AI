@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useLocation } from 'react-router-dom';
 import { SendIcon, PaperclipIcon, HeartIcon, CheckCircle2Icon, BrainCircuitIcon, ListTodoIcon, SparklesIcon, MoreVerticalIcon, BriefcaseIcon, GlobeIcon, FileTextIcon, FolderIcon, SearchIcon, ChevronDownIcon, SquareIcon, RotateCwIcon, PanelRightCloseIcon, PanelRightOpenIcon, FileIcon, ImageIcon, Loader2Icon, AlertCircleIcon } from 'lucide-react';
 import { Badge } from '../../components/ui/Badge';
 import { api } from '../../lib/apiClient';
@@ -84,6 +85,7 @@ function statusToStage(status?: string): 'thinking' | 'planning' | 'executing' {
 // ── Main component ────────────────────────────────────────────────────────────
 
 export function ChatPage() {
+  const location = useLocation();
   const [messages, setMessages] = useState<Message[]>([]);
   const [activeStage, setActiveStage] = useState<'thinking' | 'planning' | 'executing'>('executing');
   const [inputValue, setInputValue] = useState('');
@@ -122,6 +124,14 @@ export function ChatPage() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // ── Auto-submit task passed from home page ───────────────────────────────────
+  useEffect(() => {
+    const initialTask = (location.state as { initialTask?: string } | null)?.initialTask;
+    if (initialTask) {
+      handleSend(initialTask);
+    }
+  }, []);
 
   // ── Poll for task status ─────────────────────────────────────────────────────
   useEffect(() => {
@@ -178,8 +188,8 @@ export function ChatPage() {
   const filteredFiles = FILE_LIST.filter(f => f.name.toLowerCase().includes(atQuery));
 
   // ── Send message ─────────────────────────────────────────────────────────────
-  const handleSend = useCallback(async () => {
-    const task = inputValue.trim();
+  const handleSend = useCallback(async (taskOverride?: string) => {
+    const task = (taskOverride ?? inputValue).trim();
     if (!task || isRunning) return;
 
     const userMsgId = uid();

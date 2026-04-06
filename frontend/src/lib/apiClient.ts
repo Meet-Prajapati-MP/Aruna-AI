@@ -49,10 +49,12 @@ async function request<T>(
   });
 
   if (response.status === 401) {
-    // Token expired or invalid — clear session and force re-login
-    await supabase.auth.signOut();
-    window.location.href = '/login';
-    throw new ApiError(401, 'Session expired. Please log in again.');
+    let detail = 'Unauthorized';
+    try {
+      const err = await response.json();
+      detail = err.detail || detail;
+    } catch {}
+    throw new ApiError(401, detail);
   }
 
   if (!response.ok) {
