@@ -533,7 +533,7 @@ export function ChatPage() {
             data-id="element-542"
           />
           <button
-            onClick={handleSend}
+            onClick={() => handleSend()}
             disabled={!inputValue.trim() || isRunning}
             className={`absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-xl flex items-center justify-center transition-colors ${inputValue.trim() && !isRunning ? 'bg-primary text-white shadow-sm' : 'bg-cream text-text-muted'}`}
             data-id="element-543"
