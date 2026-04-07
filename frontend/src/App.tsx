@@ -31,6 +31,7 @@ import { SignupPage } from './pages/auth/SignupPage';
 import { ForgotPasswordPage } from './pages/auth/ForgotPasswordPage';
 import { ResetPasswordPage } from './pages/auth/ResetPasswordPage';
 import { VerifyEmailPage } from './pages/auth/VerifyEmailPage';
+import { AuthCallbackPage } from './pages/auth/AuthCallbackPage';
 // App Pages
 import { AppHomePage } from './pages/app/AppHomePage';
 import { ChatPage } from './pages/app/ChatPage';
@@ -92,6 +93,7 @@ function AppRoutes() {
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/verify-email" element={<VerifyEmailPage />} />
+      <Route path="/auth/callback" element={<AuthCallbackPage />} />
 
       {/* Protected App Routes — all wrapped in ProtectedRoute */}
       <Route
