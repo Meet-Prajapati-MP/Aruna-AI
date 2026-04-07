@@ -108,6 +108,17 @@ export function ChatPage() {
   // The latest AI message that is still in-flight
   const pendingMsg = messages.findLast(m => m.role === 'ai' && ['queued', 'running'].includes(m.taskStatus ?? ''));
 
+  // Sticky header compression on scroll
+  const [headerCompressed, setHeaderCompressed] = useState(false);
+  const messagesScrollRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = messagesScrollRef.current;
+    if (!el) return;
+    const onScroll = () => setHeaderCompressed(el.scrollTop > 48);
+    el.addEventListener('scroll', onScroll, { passive: true });
+    return () => el.removeEventListener('scroll', onScroll);
+  }, []);
+
   // ── Close menus on outside click ────────────────────────────────────────────
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -239,17 +250,19 @@ export function ChatPage() {
   return <div className="flex h-full bg-white relative overflow-hidden" data-id="element-423">
     {/* Main Chat Area */}
     <div className={`flex flex-col flex-1 transition-all duration-300 ${isRightPanelOpen ? 'mr-80' : ''}`} data-id="element-424">
-      {/* Chat Header */}
-      <div className="flex-shrink-0 px-6 py-4 border-b border-border bg-white/80 backdrop-blur-sm z-10 flex flex-col gap-3" data-id="element-425">
+      {/* Chat Header — compresses to slim bar on scroll */}
+      <div className={`flex-shrink-0 border-b border-border bg-white/90 backdrop-blur-sm z-10 flex flex-col transition-all duration-300 ${headerCompressed ? 'px-6 py-2 gap-0' : 'px-6 py-4 gap-3'}`} data-id="element-425">
         {/* Top Row: Title & Controls */}
         <div className="flex items-center justify-between" data-id="element-426">
           <div data-id="element-427">
-            <h2 className="text-lg font-serif text-text-primary" data-id="element-428">
+            <h2 className={`font-serif text-text-primary transition-all duration-300 ${headerCompressed ? 'text-sm font-medium truncate max-w-[220px] sm:max-w-xs' : 'text-lg'}`} data-id="element-428">
               {messages.length > 0 ? sessionTitle : 'New Session'}
             </h2>
-            <p className="text-xs text-text-secondary mt-0.5" data-id="element-429">
-              {messages.length > 0 ? `${messages.filter(m => m.role === 'user').length} message(s)` : 'Ask anything to get started'}
-            </p>
+            {!headerCompressed && (
+              <p className="text-xs text-text-secondary mt-0.5" data-id="element-429">
+                {messages.length > 0 ? `${messages.filter(m => m.role === 'user').length} message(s)` : 'Ask anything to get started'}
+              </p>
+            )}
           </div>
 
           <div className="flex items-center gap-3" data-id="element-430">
@@ -303,14 +316,16 @@ export function ChatPage() {
           </div>
         </div>
 
-        {/* Bottom Row: Mode Pills */}
-        <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar pb-1" data-id="element-466">
-          {(['Ask', 'Research', 'Create', 'Operate', 'Automate'] as const).map(mode => <button key={mode} onClick={() => setActiveMode(mode)} className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap ${activeMode === mode ? 'bg-primary text-white shadow-sm' : 'bg-cream text-text-secondary hover:text-text-primary hover:bg-beige'}`} data-id="element-467">{mode}</button>)}
-        </div>
+        {/* Bottom Row: Mode Pills — hidden when header compresses */}
+        {!headerCompressed && (
+          <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar pb-1" data-id="element-466">
+            {(['Ask', 'Research', 'Create', 'Operate', 'Automate'] as const).map(mode => <button key={mode} onClick={() => setActiveMode(mode)} className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap ${activeMode === mode ? 'bg-primary text-white shadow-sm' : 'bg-cream text-text-secondary hover:text-text-primary hover:bg-beige'}`} data-id="element-467">{mode}</button>)}
+          </div>
+        )}
       </div>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-8 pb-40" data-id="element-468">
+      <div ref={messagesScrollRef} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-8 pb-40" data-id="element-468">
 
         {/* Empty state */}
         {messages.length === 0 && (
@@ -353,7 +368,7 @@ export function ChatPage() {
 
           return (
             <div key={msg.id} className="flex justify-start" data-id="element-472">
-              <div className="flex gap-3 max-w-[95%] sm:max-w-[85%] w-full" data-id="element-473">
+              <div className="flex gap-3 w-full max-w-full" data-id="element-473">
                 <div className="w-8 h-8 rounded-lg bg-primary flex-shrink-0 flex items-center justify-center text-white mt-1 shadow-sm" data-id="element-474">
                   {msg.taskStatus === 'queued' || msg.taskStatus === 'running'
                     ? <Loader2Icon className="w-4 h-4 animate-spin" />
@@ -420,9 +435,9 @@ export function ChatPage() {
                     </div>
 
                     {/* Stage Content */}
-                    <div className="bg-white max-h-[65vh] overflow-y-auto" data-id="element-500">
+                    <div className="bg-white" data-id="element-500">
                       <AnimatePresence mode="wait" data-id="element-501">
-                        <motion.div key={displayStage} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }} className="p-5 sm:p-6" data-id="element-502">
+                        <motion.div key={displayStage} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }} className="p-5 sm:p-8" data-id="element-502">
 
                           {/* THINKING — pulsing dots */}
                           {displayStage === 'thinking' && (
@@ -473,15 +488,22 @@ export function ChatPage() {
                                 <span className="text-sm leading-relaxed">{executingText}</span>
                               </div>
                             ) : executingText ? (
-                              <div className="prose prose-sm max-w-none
-                                prose-headings:font-semibold prose-headings:text-text-primary prose-headings:mt-5 prose-headings:mb-2
-                                prose-h1:text-lg prose-h2:text-base prose-h3:text-sm
-                                prose-p:text-text-primary prose-p:leading-relaxed prose-p:my-2
-                                prose-li:text-text-primary prose-li:leading-relaxed
-                                prose-ul:my-2 prose-ol:my-2
+                              <div className="prose prose-base max-w-none
+                                prose-headings:font-bold prose-headings:text-text-primary prose-headings:tracking-tight
+                                prose-h1:text-2xl prose-h1:mt-8 prose-h1:mb-4 prose-h1:border-b prose-h1:border-border/60 prose-h1:pb-3
+                                prose-h2:text-xl prose-h2:mt-7 prose-h2:mb-3
+                                prose-h3:text-lg prose-h3:mt-5 prose-h3:mb-2
+                                prose-h4:text-base prose-h4:mt-4 prose-h4:mb-1.5
+                                prose-p:text-text-primary prose-p:leading-7 prose-p:my-3
+                                prose-li:text-text-primary prose-li:leading-7 prose-li:my-1
+                                prose-ul:my-3 prose-ol:my-3 prose-ul:space-y-1 prose-ol:space-y-1
                                 prose-strong:text-text-primary prose-strong:font-semibold
-                                prose-code:bg-slate-100 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-xs
-                                prose-blockquote:border-l-4 prose-blockquote:border-primary/30 prose-blockquote:pl-4 prose-blockquote:italic prose-blockquote:text-text-secondary">
+                                prose-em:text-text-secondary
+                                prose-code:bg-slate-100 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-sm prose-code:font-mono
+                                prose-pre:bg-slate-900 prose-pre:text-slate-100 prose-pre:rounded-xl prose-pre:p-5 prose-pre:my-4
+                                prose-blockquote:border-l-4 prose-blockquote:border-primary/40 prose-blockquote:pl-4 prose-blockquote:italic prose-blockquote:text-text-secondary prose-blockquote:my-4
+                                prose-hr:border-border prose-hr:my-6
+                                prose-table:text-sm prose-th:font-semibold prose-th:text-text-primary prose-td:text-text-primary">
                                 <ReactMarkdown remarkPlugins={[remarkGfm]}>
                                   {executingText}
                                 </ReactMarkdown>
