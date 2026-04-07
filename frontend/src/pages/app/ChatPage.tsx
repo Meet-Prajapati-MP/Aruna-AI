@@ -370,166 +370,89 @@ export function ChatPage() {
           const step3Spinning = msg.taskStatus === 'running';
           const step3Done = ['completed', 'failed'].includes(msg.taskStatus ?? '');
 
+          const isLoading = msg.taskStatus === 'queued' || msg.taskStatus === 'running';
+          const isFailed = msg.taskStatus === 'failed';
+          const result = msg.result ?? '';
+
           return (
             <div key={msg.id} className="flex justify-start" data-id="element-472">
-              <div className="flex gap-3 w-full max-w-full" data-id="element-473">
-                <div className="w-8 h-8 rounded-lg bg-primary flex-shrink-0 flex items-center justify-center mt-1 shadow-sm text-white" data-id="element-474">
-                  {msg.taskStatus === 'queued' || msg.taskStatus === 'running'
-                    ? <Loader2Icon className="w-4 h-4 animate-spin" />
-                    : <SparklesIcon className="w-4 h-4" data-id="element-475" />}
+              <div className="flex flex-col gap-3 w-full" data-id="element-473">
+
+                {/* ── Agent header row ── */}
+                <div className="flex items-center gap-2.5">
+                  <motion.div
+                    className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center text-white shadow-sm flex-shrink-0"
+                    animate={isLoading ? { scale: [1, 1.15, 1], opacity: [0.8, 1, 0.8] } : { scale: 1, opacity: 1 }}
+                    transition={isLoading ? { duration: 1.6, repeat: Infinity, ease: 'easeInOut' } : {}}
+                  >
+                    <SparklesIcon className="w-3.5 h-3.5" />
+                  </motion.div>
+                  <span className="font-semibold text-sm text-text-primary">Aruna</span>
+                  {msg.agentLabel && (
+                    <span className="text-[11px] text-text-muted bg-warm-white border border-border/50 rounded-full px-2.5 py-0.5 font-medium">
+                      {msg.agentLabel}
+                    </span>
+                  )}
                 </div>
 
-                <div className="flex-1 flex flex-col gap-2" data-id="element-476">
-                  {/* Task Plan */}
-                  <div className="bg-warm-white border border-border/50 rounded-xl p-3 text-xs" data-id="element-477">
-                    <div className="flex items-center justify-between text-text-secondary font-medium mb-2" data-id="element-478">
-                      <span className="flex items-center gap-1.5" data-id="element-479">
-                        <ListTodoIcon className="w-3.5 h-3.5" data-id="element-480" /> Task Plan
-                      </span>
-                      <span data-id="element-481">
-                        {step3Done ? 'Step 3 of 3' : step1Done ? 'Step 2 of 3' : 'Step 1 of 3'}
-                      </span>
-                    </div>
-                    <div className="space-y-1.5" data-id="element-482">
-                      {/* Step 1 */}
-                      <div className="flex items-center gap-2 text-text-muted" data-id="element-483">
-                        {step1Done
-                          ? <CheckCircle2Icon className="w-3.5 h-3.5 text-emerald-600" data-id="element-484" />
-                          : <div className="w-3.5 h-3.5 rounded-full border-2 border-primary border-t-transparent animate-spin" />}
-                        <span data-id="element-485">Head Agent routing to best specialist...</span>
-                      </div>
-                      {/* Step 2 */}
-                      <div className={`flex items-center gap-2 ${step1Done ? 'text-text-muted' : 'text-text-muted/40'}`} data-id="element-486">
-                        {step2Done
-                          ? <CheckCircle2Icon className="w-3.5 h-3.5 text-emerald-600" data-id="element-487" />
-                          : step1Done
-                            ? <div className="w-3.5 h-3.5 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-                            : <div className="w-3.5 h-3.5 rounded-full border-2 border-border" />}
-                        <span data-id="element-488">
-                          {msg.agentLabel ? `${msg.agentLabel} activated` : 'Specialist agent activated'}
-                        </span>
-                      </div>
-                      {/* Step 3 */}
-                      <div className={`flex items-center gap-2 ${step1Done ? 'text-text-primary font-medium' : 'text-text-muted/40'}`} data-id="element-489">
-                        {step3Done
-                          ? <CheckCircle2Icon className="w-3.5 h-3.5 text-emerald-600" />
-                          : step3Spinning
-                            ? <div className="w-3.5 h-3.5 rounded-full border-2 border-primary border-t-transparent animate-spin" data-id="element-490" />
-                            : <div className="w-3.5 h-3.5 rounded-full border-2 border-border" />}
-                        <span data-id="element-491">
-                          {step3Done ? 'Task completed' : 'Executing task...'}
+                {/* ── Content ── */}
+                <div className="pl-[38px]">
+                  {isLoading ? (
+                    <div className="flex flex-col gap-3">
+                      <p className="text-sm text-text-secondary leading-relaxed">
+                        {msg.agentLabel
+                          ? `${msg.agentLabel} is working on your task...`
+                          : 'Routing your request to the best specialist agent...'}
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <motion.div
+                          className="w-2 h-2 rounded-full bg-blue-500"
+                          animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }}
+                          transition={{ duration: 1, repeat: Infinity, ease: 'easeInOut' }}
+                        />
+                        <span className="text-sm text-text-muted">
+                          {msg.taskStatus === 'queued' ? 'Thinking' : 'Working'}
                         </span>
                       </div>
                     </div>
-                  </div>
-
-                  {/* Stage tabs + content */}
-                  <div className="bg-white border border-border shadow-soft rounded-2xl rounded-tl-sm overflow-hidden" data-id="element-492">
-                    {/* Stage Tabs */}
-                    <div className="flex border-b border-border bg-warm-white/30 px-2 pt-2 overflow-x-auto hide-scrollbar" data-id="element-493">
-                      <button onClick={() => isThisActive && setActiveStage('thinking')} className={`flex items-center gap-2 px-4 py-2.5 text-xs font-medium border-b-2 transition-colors whitespace-nowrap ${displayStage === 'thinking' ? 'border-primary text-primary bg-white rounded-t-lg' : 'border-transparent text-text-secondary hover:text-text-primary'}`} data-id="element-494">
-                        <BrainCircuitIcon className="w-3.5 h-3.5" data-id="element-495" /> Thinking
-                      </button>
-                      <button onClick={() => isThisActive && setActiveStage('planning')} className={`flex items-center gap-2 px-4 py-2.5 text-xs font-medium border-b-2 transition-colors whitespace-nowrap ${displayStage === 'planning' ? 'border-primary text-primary bg-white rounded-t-lg' : 'border-transparent text-text-secondary hover:text-text-primary'}`} data-id="element-496">
-                        <ListTodoIcon className="w-3.5 h-3.5" data-id="element-497" /> Planning
-                      </button>
-                      <button onClick={() => isThisActive && setActiveStage('executing')} className={`flex items-center gap-2 px-4 py-2.5 text-xs font-medium border-b-2 transition-colors whitespace-nowrap ${displayStage === 'executing' ? 'border-primary text-primary bg-white rounded-t-lg' : 'border-transparent text-text-secondary hover:text-text-primary'}`} data-id="element-498">
-                        <CheckCircle2Icon className="w-3.5 h-3.5" data-id="element-499" /> Executing
-                      </button>
+                  ) : isFailed ? (
+                    <div className="flex items-start gap-3 text-red-500 bg-red-50 border border-red-100 rounded-xl p-4">
+                      <AlertCircleIcon className="w-4 h-4 shrink-0 mt-0.5" />
+                      <span className="text-sm leading-relaxed">{msg.error ?? 'Task failed. Please try again.'}</span>
                     </div>
-
-                    {/* Stage Content */}
-                    <div className="bg-white" data-id="element-500">
-                      <AnimatePresence mode="wait" data-id="element-501">
-                        <motion.div key={displayStage} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }} className="p-5 sm:p-8" data-id="element-502">
-
-                          {/* THINKING — pulsing dots */}
-                          {displayStage === 'thinking' && (
-                            <div className="flex flex-col gap-4">
-                              <div className="flex items-center gap-3">
-                                <div className="flex gap-1">
-                                  {[0,1,2].map(i => (
-                                    <motion.div key={i} className="w-2 h-2 rounded-full bg-primary"
-                                      animate={{ scale: [1, 1.4, 1], opacity: [0.4, 1, 0.4] }}
-                                      transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.2 }} />
-                                  ))}
-                                </div>
-                                <span className="text-sm text-text-secondary font-medium">Analysing request...</span>
-                              </div>
-                              <div className="text-sm text-text-secondary italic border-l-2 border-primary/30 pl-4 py-1 leading-relaxed">
-                                {thinkingText}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* PLANNING — animated log lines */}
-                          {displayStage === 'planning' && (
-                            <div className="space-y-2">
-                              {[
-                                { icon: '🔍', text: 'Head Router Agent classifying task...' },
-                                { icon: '⚡', text: `Specialist activated${msg.agentLabel ? `: ${msg.agentLabel}` : ''}` },
-                                { icon: '🚀', text: 'Executing task with full context...' },
-                              ].map((line, i) => (
-                                <motion.div key={i} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }}
-                                  transition={{ delay: i * 0.3, duration: 0.3 }}
-                                  className="flex items-center gap-3 text-xs font-mono bg-slate-50 border border-slate-100 rounded-lg px-4 py-2.5 text-slate-600">
-                                  <span>{line.icon}</span>
-                                  <span>{line.text}</span>
-                                  {i === 2 && (
-                                    <motion.span animate={{ opacity: [1,0,1] }} transition={{ duration: 0.8, repeat: Infinity }}
-                                      className="ml-auto text-primary font-bold">▋</motion.span>
-                                  )}
-                                </motion.div>
-                              ))}
-                            </div>
-                          )}
-
-                          {/* EXECUTING — markdown result */}
-                          {displayStage === 'executing' && (
-                            msg.taskStatus === 'failed' ? (
-                              <div className="flex items-start gap-3 text-red-500 bg-red-50 border border-red-100 rounded-xl p-4">
-                                <AlertCircleIcon className="w-4 h-4 shrink-0 mt-0.5" />
-                                <span className="text-sm leading-relaxed">{executingText}</span>
-                              </div>
-                            ) : executingText ? (
-                              <div className="prose prose-base max-w-none
-                                prose-headings:font-bold prose-headings:text-text-primary prose-headings:tracking-tight
-                                prose-h1:text-2xl prose-h1:mt-8 prose-h1:mb-4 prose-h1:border-b prose-h1:border-border/60 prose-h1:pb-3
-                                prose-h2:text-xl prose-h2:mt-7 prose-h2:mb-3
-                                prose-h3:text-lg prose-h3:mt-5 prose-h3:mb-2
-                                prose-h4:text-base prose-h4:mt-4 prose-h4:mb-1.5
-                                prose-p:text-text-primary prose-p:leading-7 prose-p:my-3
-                                prose-li:text-text-primary prose-li:leading-7 prose-li:my-1
-                                prose-ul:my-3 prose-ol:my-3 prose-ul:space-y-1 prose-ol:space-y-1
-                                prose-strong:text-text-primary prose-strong:font-semibold
-                                prose-em:text-text-secondary
-                                prose-code:bg-slate-100 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-sm prose-code:font-mono
-                                prose-pre:bg-slate-900 prose-pre:text-slate-100 prose-pre:rounded-xl prose-pre:p-5 prose-pre:my-4
-                                prose-blockquote:border-l-4 prose-blockquote:border-primary/40 prose-blockquote:pl-4 prose-blockquote:italic prose-blockquote:text-text-secondary prose-blockquote:my-4
-                                prose-hr:border-border prose-hr:my-6
-                                prose-table:text-sm prose-th:font-semibold prose-th:text-text-primary prose-td:text-text-primary">
-                                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                  {executingText}
-                                </ReactMarkdown>
-                              </div>
-                            ) : (
-                              <div className="flex items-center gap-3 text-text-muted py-4">
-                                <div className="flex gap-1">
-                                  {[0,1,2].map(i => (
-                                    <motion.div key={i} className="w-1.5 h-1.5 rounded-full bg-primary/50"
-                                      animate={{ scale: [1, 1.5, 1], opacity: [0.3, 1, 0.3] }}
-                                      transition={{ duration: 1, repeat: Infinity, delay: i * 0.15 }} />
-                                  ))}
-                                </div>
-                                <span className="text-sm">Agent is preparing your response...</span>
-                              </div>
-                            )
-                          )}
-
-                        </motion.div>
-                      </AnimatePresence>
+                  ) : result ? (
+                    <motion.div
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.25 }}
+                      className="prose prose-base max-w-none
+                        prose-headings:font-bold prose-headings:text-text-primary prose-headings:tracking-tight
+                        prose-h1:text-2xl prose-h1:mt-8 prose-h1:mb-4 prose-h1:border-b prose-h1:border-border/60 prose-h1:pb-3
+                        prose-h2:text-xl prose-h2:mt-7 prose-h2:mb-3
+                        prose-h3:text-lg prose-h3:mt-5 prose-h3:mb-2
+                        prose-h4:text-base prose-h4:mt-4 prose-h4:mb-1.5
+                        prose-p:text-text-primary prose-p:leading-7 prose-p:my-3
+                        prose-li:text-text-primary prose-li:leading-7 prose-li:my-1
+                        prose-ul:my-3 prose-ol:my-3 prose-ul:space-y-1 prose-ol:space-y-1
+                        prose-strong:text-text-primary prose-strong:font-semibold
+                        prose-em:text-text-secondary
+                        prose-code:bg-slate-100 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-sm prose-code:font-mono
+                        prose-pre:bg-slate-900 prose-pre:text-slate-100 prose-pre:rounded-xl prose-pre:p-5 prose-pre:my-4
+                        prose-blockquote:border-l-4 prose-blockquote:border-primary/40 prose-blockquote:pl-4 prose-blockquote:italic prose-blockquote:text-text-secondary prose-blockquote:my-4
+                        prose-hr:border-border prose-hr:my-6
+                        prose-table:text-sm prose-th:font-semibold prose-th:text-text-primary prose-td:text-text-primary">
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>{result}</ReactMarkdown>
+                    </motion.div>
+                  ) : (
+                    <div className="flex items-center gap-2 text-text-muted">
+                      {[0,1,2].map(i => (
+                        <motion.div key={i} className="w-1.5 h-1.5 rounded-full bg-primary/50"
+                          animate={{ scale: [1, 1.5, 1], opacity: [0.3, 1, 0.3] }}
+                          transition={{ duration: 1, repeat: Infinity, delay: i * 0.15 }} />
+                      ))}
+                      <span className="text-sm ml-1">Preparing response...</span>
                     </div>
-                  </div>
+                  )}
                 </div>
               </div>
             </div>
