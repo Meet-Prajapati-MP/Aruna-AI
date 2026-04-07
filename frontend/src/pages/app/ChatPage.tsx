@@ -275,10 +275,13 @@ export function ChatPage() {
     if (!pendingMsg?.taskId) return;
     const taskId = pendingMsg.taskId;
     const msgId = pendingMsg.id;
+    let consecutiveErrors = 0;
+    const MAX_RETRIES = 5; // tolerate cold starts / brief Railway restarts
 
     const interval = setInterval(async () => {
       try {
         const status = await api.getTaskStatus(taskId);
+        consecutiveErrors = 0; // reset on success
         setMessages(prev => prev.map(m =>
           m.id === msgId
             ? { ...m, taskStatus: status.status, result: status.result ?? m.result, agentLabel: status.agent_label ?? m.agentLabel, error: status.error ?? m.error }
@@ -289,13 +292,22 @@ export function ChatPage() {
           setIsRunning(false);
           clearInterval(interval);
         }
-      } catch {
-        // API error — stop polling and mark message failed so UI doesn't get stuck
+      } catch (err) {
+        consecutiveErrors++;
+        if (consecutiveErrors < MAX_RETRIES) return; // silently retry
+        // Give up after MAX_RETRIES consecutive failures
         clearInterval(interval);
         setIsRunning(false);
+        const isNetworkErr = err instanceof TypeError;
         setMessages(prev => prev.map(m =>
           m.id === msgId
-            ? { ...m, taskStatus: 'failed', error: 'Connection lost. Please try again.' }
+            ? {
+                ...m,
+                taskStatus: 'failed',
+                error: isNetworkErr
+                  ? 'Cannot reach server. Check your connection or try again.'
+                  : 'Server error. Please try again.',
+              }
             : m
         ));
       }

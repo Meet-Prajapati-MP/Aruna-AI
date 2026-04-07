@@ -843,5 +843,31 @@ CREATE OR REPLACE VIEW public.current_month_usage AS
 
 
 -- ===========================================================================
+-- AGENT TASKS  (persists backend task store across Railway restarts)
+-- ===========================================================================
+
+CREATE TABLE IF NOT EXISTS public.agent_tasks (
+  id           UUID        PRIMARY KEY,
+  user_id      UUID        NOT NULL,
+  status       TEXT        NOT NULL DEFAULT 'queued',
+  description  TEXT,
+  result       TEXT,
+  error        TEXT,
+  agent_type   TEXT,
+  agent_label  TEXT,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  completed_at TIMESTAMPTZ
+);
+
+ALTER TABLE public.agent_tasks ENABLE ROW LEVEL SECURITY;
+
+-- Users can only read their own tasks
+CREATE POLICY "agent_tasks_select_own" ON public.agent_tasks
+  FOR SELECT USING (user_id = auth.uid());
+
+-- Service role writes from the backend (bypasses RLS via admin client)
+
+
+-- ===========================================================================
 -- END OF SCHEMA
 -- ===========================================================================

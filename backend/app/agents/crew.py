@@ -34,9 +34,58 @@ from app.utils.logger import get_logger
 logger = get_logger(__name__)
 
 # ── In-memory task store ──────────────────────────────────────────────────────
-# NOTE: Works only with --workers 1.
-# For multi-worker / horizontal scaling: replace with Redis or Supabase table.
+# Primary store — fast, lives for the lifetime of the process.
+# Supabase is the durable backup so tasks survive Railway restarts.
 _task_store: dict[str, dict[str, Any]] = {}
+
+
+# ── Supabase persistence helpers ──────────────────────────────────────────────
+
+def _db_save(record: dict) -> None:
+    """Write/update a task record to Supabase agent_tasks. Never raises."""
+    try:
+        from app.integrations.supabase_client import get_supabase_admin
+        admin = get_supabase_admin()
+        admin.table("agent_tasks").upsert({
+            "id":          record["task_id"],
+            "user_id":     record["user_id"],
+            "status":      record["status"],
+            "description": record.get("description"),
+            "result":      record.get("result"),
+            "error":       record.get("error"),
+            "agent_type":  record.get("agent_type"),
+            "agent_label": record.get("agent_label"),
+            "created_at":  record.get("created_at"),
+            "completed_at": record.get("completed_at"),
+        }).execute()
+    except Exception as exc:
+        logger.warning("db_save_failed", task_id=record.get("task_id"), error=str(exc))
+
+
+def _db_get(task_id: str) -> Optional[dict]:
+    """Fetch a task from Supabase. Returns None on any error."""
+    try:
+        from app.integrations.supabase_client import get_supabase_admin
+        admin = get_supabase_admin()
+        res = admin.table("agent_tasks").select("*").eq("id", task_id).single().execute()
+        row = res.data
+        if not row:
+            return None
+        return {
+            "task_id":     row["id"],
+            "user_id":     row["user_id"],
+            "status":      row["status"],
+            "description": row.get("description"),
+            "result":      row.get("result"),
+            "error":       row.get("error"),
+            "agent_type":  row.get("agent_type"),
+            "agent_label": row.get("agent_label"),
+            "created_at":  row.get("created_at"),
+            "completed_at": row.get("completed_at"),
+        }
+    except Exception as exc:
+        logger.warning("db_get_failed", task_id=task_id, error=str(exc))
+        return None
 
 
 def _new_task_record(
@@ -151,7 +200,9 @@ def create_task_record(
     Actual execution is started by the caller via BackgroundTasks.
     """
     task_id = str(uuid.uuid4())
-    _task_store[task_id] = _new_task_record(task_id, task_description, user_id, complexity)
+    record = _new_task_record(task_id, task_description, user_id, complexity)
+    _task_store[task_id] = record
+    _db_save(record)
     logger.info("task_record_created", task_id=task_id, user_id=user_id)
     return task_id
 
@@ -168,6 +219,7 @@ def execute_task_background(task_id: str, task_description: str, complexity: Opt
     from app.agents.smart_router import run_smart_router  # deferred import
 
     _task_store[task_id]["status"] = "running"
+    _db_save(_task_store[task_id])
     logger.info("task_started", task_id=task_id)
 
     try:
@@ -179,6 +231,7 @@ def execute_task_background(task_id: str, task_description: str, complexity: Opt
             "agent_label": output.get("agent_label"),
             "completed_at": datetime.now(timezone.utc).isoformat(),
         })
+        _db_save(_task_store[task_id])
         logger.info("task_completed", task_id=task_id, agent_type=output.get("agent_type"))
 
     except Exception as exc:
@@ -190,11 +243,19 @@ def execute_task_background(task_id: str, task_description: str, complexity: Opt
             "error": error_detail,
             "completed_at": datetime.now(timezone.utc).isoformat(),
         })
+        _db_save(_task_store[task_id])
 
 
 def get_task_status(task_id: str) -> Optional[dict]:
-    """Return the current status record for a task_id, or None if not found."""
-    return _task_store.get(task_id)
+    """Return task record from memory (fast) or Supabase (survives restarts)."""
+    record = _task_store.get(task_id)
+    if record is not None:
+        return record
+    # Not in memory — backend may have restarted; try Supabase
+    db_record = _db_get(task_id)
+    if db_record:
+        _task_store[task_id] = db_record  # re-warm the cache
+    return db_record
 
 
 # ── Smart Router Task Support ─────────────────────────────────────────────────
@@ -206,7 +267,7 @@ def create_smart_task_record(
 ) -> str:
     """Create a task record for the smart-router system and return task_id."""
     task_id = str(uuid.uuid4())
-    _task_store[task_id] = {
+    record = {
         "task_id": task_id,
         "status": "queued",
         "description": task_description,
@@ -218,6 +279,8 @@ def create_smart_task_record(
         "error": None,
         "agent_label": None,
     }
+    _task_store[task_id] = record
+    _db_save(record)
     logger.info("smart_task_record_created", task_id=task_id, agent_type=agent_type)
     return task_id
 
@@ -234,6 +297,7 @@ def execute_smart_task_background(
     from app.agents.smart_router import run_smart_router  # deferred import
 
     _task_store[task_id]["status"] = "running"
+    _db_save(_task_store[task_id])
     logger.info("smart_task_started", task_id=task_id)
 
     try:
@@ -245,6 +309,7 @@ def execute_smart_task_background(
             "agent_type": output.get("agent_type"),
             "completed_at": datetime.now(timezone.utc).isoformat(),
         })
+        _db_save(_task_store[task_id])
         logger.info("smart_task_completed", task_id=task_id, agent_type=output.get("agent_type"))
     except Exception as exc:
         import traceback
@@ -255,3 +320,4 @@ def execute_smart_task_background(
             "error": error_detail,
             "completed_at": datetime.now(timezone.utc).isoformat(),
         })
+        _db_save(_task_store[task_id])
