@@ -380,13 +380,48 @@ export function ChatPage() {
 
                 {/* ── Agent header row ── */}
                 <div className="flex items-center gap-2.5">
-                  <motion.div
-                    className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center text-white shadow-sm flex-shrink-0"
-                    animate={isLoading ? { scale: [1, 1.15, 1], opacity: [0.8, 1, 0.8] } : { scale: 1, opacity: 1 }}
-                    transition={isLoading ? { duration: 1.6, repeat: Infinity, ease: 'easeInOut' } : {}}
-                  >
-                    <SparklesIcon className="w-3.5 h-3.5" />
-                  </motion.div>
+                  {/* Aruna logo — rays animate when loading */}
+                  <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center shadow-sm flex-shrink-0">
+                    <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none">
+                      {Array.from({ length: 8 }).map((_, i) => {
+                        const angle = (i * 45 * Math.PI) / 180;
+                        const cx = 12, cy = 12;
+                        const longR = 9, shortR = 5;
+                        const delays = [0, 0.3, 0.15, 0.45, 0.08, 0.35, 0.22, 0.52];
+                        const durations = [1.6, 1.9, 1.5, 2.0, 1.7, 1.4, 1.8, 1.6];
+                        return (
+                          <motion.line
+                            key={i}
+                            x1={cx} y1={cy}
+                            x2={cx + Math.cos(angle) * longR}
+                            y2={cy + Math.sin(angle) * longR}
+                            stroke="white"
+                            strokeWidth="1.6"
+                            strokeLinecap="round"
+                            animate={isLoading ? {
+                              x2: [
+                                cx + Math.cos(angle) * longR,
+                                cx + Math.cos(angle) * shortR,
+                                cx + Math.cos(angle) * longR,
+                              ],
+                              y2: [
+                                cy + Math.sin(angle) * longR,
+                                cy + Math.sin(angle) * shortR,
+                                cy + Math.sin(angle) * longR,
+                              ],
+                              opacity: [1, 0.45, 1],
+                            } : { x2: cx + Math.cos(angle) * longR, y2: cy + Math.sin(angle) * longR, opacity: 1 }}
+                            transition={isLoading ? {
+                              duration: durations[i],
+                              repeat: Infinity,
+                              delay: delays[i],
+                              ease: 'easeInOut',
+                            } : {}}
+                          />
+                        );
+                      })}
+                    </svg>
+                  </div>
                   <span className="font-semibold text-sm text-text-primary">Aruna</span>
                   {msg.agentLabel && (
                     <span className="text-[11px] text-text-muted bg-warm-white border border-border/50 rounded-full px-2.5 py-0.5 font-medium">
@@ -398,22 +433,15 @@ export function ChatPage() {
                 {/* ── Content ── */}
                 <div className="pl-[38px]">
                   {isLoading ? (
-                    <div className="flex flex-col gap-3">
+                    <div className="flex flex-col gap-1.5">
                       <p className="text-sm text-text-secondary leading-relaxed">
                         {msg.agentLabel
                           ? `${msg.agentLabel} is working on your task...`
                           : 'Routing your request to the best specialist agent...'}
                       </p>
-                      <div className="flex items-center gap-2">
-                        <motion.div
-                          className="w-2 h-2 rounded-full bg-blue-500"
-                          animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }}
-                          transition={{ duration: 1, repeat: Infinity, ease: 'easeInOut' }}
-                        />
-                        <span className="text-sm text-text-muted">
-                          {msg.taskStatus === 'queued' ? 'Thinking' : 'Working'}
-                        </span>
-                      </div>
+                      <span className="text-xs text-text-muted">
+                        {msg.taskStatus === 'queued' ? 'Thinking...' : 'Working...'}
+                      </span>
                     </div>
                   ) : isFailed ? (
                     <div className="flex items-start gap-3 text-red-500 bg-red-50 border border-red-100 rounded-xl p-4">
