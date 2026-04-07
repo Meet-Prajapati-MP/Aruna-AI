@@ -290,8 +290,14 @@ export function ChatPage() {
           clearInterval(interval);
         }
       } catch {
+        // API error — stop polling and mark message failed so UI doesn't get stuck
         clearInterval(interval);
         setIsRunning(false);
+        setMessages(prev => prev.map(m =>
+          m.id === msgId
+            ? { ...m, taskStatus: 'failed', error: 'Connection lost. Please try again.' }
+            : m
+        ));
       }
     }, 1500);
 
@@ -582,7 +588,15 @@ export function ChatPage() {
           {/* Action Buttons (Stop/Rerun) */}
           <div className="absolute -top-10 right-0 flex gap-2" data-id="element-509">
             {isRunning
-              ? <button onClick={() => setIsRunning(false)} className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-full text-xs font-medium transition-colors shadow-sm border border-red-100" data-id="element-510">
+              ? <button onClick={() => {
+                  setIsRunning(false);
+                  // Mark any in-flight AI message as cancelled so loading UI clears
+                  setMessages(prev => prev.map(m =>
+                    m.role === 'ai' && (m.taskStatus === 'queued' || m.taskStatus === 'running')
+                      ? { ...m, taskStatus: 'failed', error: 'Stopped by user.' }
+                      : m
+                  ));
+                }} className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-full text-xs font-medium transition-colors shadow-sm border border-red-100" data-id="element-510">
                   <SquareIcon className="w-3 h-3 fill-current" data-id="element-511" /> Stop
                 </button>
               : messages.length > 0
