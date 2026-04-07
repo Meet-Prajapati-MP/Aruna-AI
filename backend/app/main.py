@@ -34,11 +34,25 @@ logger = get_logger(__name__)
 
 
 # ── Lifespan ─────────────────────────────────────────────────────────────────
+def _ensure_storage_buckets() -> None:
+    """Create required Supabase Storage buckets on startup if they don't exist."""
+    try:
+        from app.integrations.supabase_client import get_supabase_admin
+        admin = get_supabase_admin()
+        existing = {b.name for b in (admin.storage.list_buckets() or [])}
+        for bucket, public in [("avatars", True), ("vault", False)]:
+            if bucket not in existing:
+                admin.storage.create_bucket(bucket, options={"public": public})
+                logger.info("storage_bucket_created", bucket=bucket)
+    except Exception as exc:
+        logger.warning("storage_bucket_setup_failed", error=str(exc))
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     settings = get_settings()
-    # Re-configure logging now that we know the environment
     configure_logging(is_production=settings.is_production)
+    _ensure_storage_buckets()
     logger.info("startup", env=settings.APP_ENV)
     yield
     logger.info("shutdown")

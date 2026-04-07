@@ -86,16 +86,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const ext = file.name.split('.').pop();
     const path = `${user.id}/avatar.${ext}`;
 
-    // Ensure the bucket exists (creates it if not)
-    const { data: buckets } = await supabase.storage.listBuckets();
-    const bucketExists = buckets?.some(b => b.name === 'avatars');
-    if (!bucketExists) {
-      const { error: bucketError } = await supabase.storage.createBucket('avatars', { public: true });
-      if (bucketError && !bucketError.message.includes('already exists')) {
-        throw new Error(`Could not create storage bucket: ${bucketError.message}`);
-      }
-    }
-
     const { error: uploadError } = await supabase.storage
       .from('avatars')
       .upload(path, file, { upsert: true });
