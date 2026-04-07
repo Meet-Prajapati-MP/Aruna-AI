@@ -72,6 +72,46 @@ const FILE_LIST = [{
   type: 'pdf'
 }];
 
+// ── Cycling status label with animated dots ───────────────────────────────────
+
+const STATUS_CYCLE = ['Working', 'Processing', 'Analyzing', 'Thinking', 'Computing'];
+
+function CyclingStatus() {
+  const [idx, setIdx] = useState(0);
+
+  useEffect(() => {
+    const t = setInterval(() => setIdx(i => (i + 1) % STATUS_CYCLE.length), 2200);
+    return () => clearInterval(t);
+  }, []);
+
+  return (
+    <div className="flex items-center gap-1.5">
+      <AnimatePresence mode="wait">
+        <motion.span
+          key={idx}
+          initial={{ opacity: 0, y: 5 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -5 }}
+          transition={{ duration: 0.22 }}
+          className="text-xs text-text-muted"
+        >
+          {STATUS_CYCLE[idx]}
+        </motion.span>
+      </AnimatePresence>
+      <div className="flex items-center gap-0.5">
+        {[0, 1, 2].map(i => (
+          <motion.span
+            key={i}
+            className="block w-[3px] h-[3px] rounded-full bg-text-muted"
+            animate={{ opacity: [0.2, 1, 0.2] }}
+            transition={{ duration: 1.1, repeat: Infinity, delay: i * 0.22, ease: 'easeInOut' }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── Streaming markdown renderer ───────────────────────────────────────────────
 // Reveals text progressively so the answer feels like it's being typed live.
 
@@ -478,15 +518,13 @@ export function ChatPage() {
                             );
                           })}
                         </svg>
-                        <div className="flex flex-col gap-0.5">
+                        <div className="flex flex-col gap-1">
                           <span className="text-sm text-text-secondary leading-relaxed">
                             {msg.agentLabel
                               ? `${msg.agentLabel} is working on your task...`
                               : 'Routing your request to the best specialist agent...'}
                           </span>
-                          <span className="text-xs text-text-muted">
-                            {msg.taskStatus === 'queued' ? 'Thinking...' : 'Working...'}
-                          </span>
+                          <CyclingStatus />
                         </div>
                       </div>
                       {msg.agentLabel && (
