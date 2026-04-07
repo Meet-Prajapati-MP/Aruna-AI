@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { HomeIcon, InboxIcon, MessageSquareIcon, LayoutGridIcon, CheckSquareIcon, SearchIcon, GitBranchIcon, ArchiveIcon, ClockIcon, UsersIcon, ShieldCheckIcon, BarChart3Icon, SettingsIcon, BellIcon, MenuIcon, ChevronDownIcon, ChevronRightIcon, PlusIcon, PuzzleIcon } from 'lucide-react';
+import { HomeIcon, InboxIcon, CheckSquareIcon, SearchIcon, GitBranchIcon, ArchiveIcon, ShieldCheckIcon, BarChart3Icon, SettingsIcon, BellIcon, MenuIcon, ChevronDownIcon, ChevronRightIcon, PlusIcon, PuzzleIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Logo } from '../ui/Logo';
 const MOCK_SIDEBAR_WORKSPACES = [{
@@ -79,15 +79,7 @@ export function AppLayout() {
     path: '/app/settings',
     icon: SettingsIcon
   }];
-  const getPageTitle = () => {
-    if (location.pathname === '/app') return 'Home';
-    if (location.pathname.includes('/app/workspaces/')) return 'Workspace';
-    const allItems = [...mainNav, ...globalViewsNav, ...bottomNavItems];
-    const item = allItems.find(i => i.path !== '/app' && location.pathname.includes(i.path));
-    if (item) return item.name;
-    return 'Aruna';
-  };
-  const SidebarContent = () => <div className="flex flex-col h-full bg-warm-white border-r border-border overflow-y-auto hide-scrollbar" data-id="element-66">
+const SidebarContent = () => <div className="flex flex-col h-full bg-warm-white border-r border-border overflow-y-auto hide-scrollbar" data-id="element-66">
       <div className="p-4 flex flex-col gap-4 border-b border-border/30 sticky top-0 bg-warm-white/90 backdrop-blur-sm z-10" data-id="element-67">
         <div className="flex justify-start" data-id="element-68">
           <Logo size="sm" data-id="element-69" />
@@ -189,6 +181,25 @@ export function AppLayout() {
       </div>
 
       <div className="p-4 mt-auto border-t border-border/30 bg-warm-white sticky bottom-0" data-id="element-105">
+        {/* Search */}
+        <div className="relative mb-1" data-id="element-search">
+          <SearchIcon className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" />
+          <input
+            type="text"
+            placeholder="Search..."
+            className="w-full bg-white border border-border/50 rounded-xl pl-9 pr-3 py-2.5 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+          />
+        </div>
+
+        {/* Notifications */}
+        <button className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium text-text-secondary hover:bg-cream hover:text-text-primary transition-all mb-1" data-id="element-notif">
+          <div className="flex items-center gap-3">
+            <BellIcon className="w-4 h-4 text-text-muted" />
+            Notifications
+          </div>
+          <div className="w-2 h-2 rounded-full bg-primary" />
+        </button>
+
         <nav className="space-y-1 mb-4" data-id="element-106">
           {bottomNavItems.map(item => {
           const isActive = location.pathname.startsWith(item.path);
@@ -251,34 +262,13 @@ export function AppLayout() {
           </>}
       </AnimatePresence>
 
+      {/* Mobile menu trigger */}
+      <button className="md:hidden fixed top-3 left-3 z-30 p-2 bg-white border border-border rounded-lg shadow-sm text-text-secondary hover:text-text-primary hover:bg-cream transition-colors" onClick={() => setIsMobileMenuOpen(true)} data-id="element-127">
+        <MenuIcon className="w-5 h-5" data-id="element-128" />
+      </button>
+
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 h-full relative" data-id="element-124">
-        {/* Topbar */}
-        <header className="h-16 flex-shrink-0 bg-white/80 backdrop-blur-md border-b border-border flex items-center justify-between px-4 sm:px-8 z-10" data-id="element-125">
-          <div className="flex items-center gap-3" data-id="element-126">
-            <button className="md:hidden p-2 -ml-2 text-text-secondary hover:text-text-primary rounded-lg hover:bg-cream" onClick={() => setIsMobileMenuOpen(true)} data-id="element-127">
-              <MenuIcon className="w-5 h-5" data-id="element-128" />
-            </button>
-            <h1 className="text-xl font-heading font-semibold text-text-primary" data-id="element-129">
-              {getPageTitle()}
-            </h1>
-          </div>
-
-          <div className="flex items-center gap-3 sm:gap-5" data-id="element-130">
-            <div className="hidden sm:flex relative" data-id="element-131">
-              <SearchIcon className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" data-id="element-132" />
-              <input type="text" placeholder="Search workspaces, files, chats..." className="bg-warm-white border border-border/50 rounded-full pl-10 pr-4 py-2 text-sm w-64 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" data-id="element-133" />
-            </div>
-            <button className="p-2.5 text-text-secondary hover:text-text-primary rounded-full hover:bg-cream transition-colors relative" data-id="element-134">
-              <BellIcon className="w-5 h-5" data-id="element-135" />
-              <span className="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full border-2 border-white" data-id="element-136"></span>
-            </button>
-            <div className="w-9 h-9 rounded-full bg-rose-light/30 border border-rose-light/50 flex items-center justify-center text-primary-dark font-heading font-bold text-sm ml-1 cursor-pointer hover:shadow-sm transition-all" data-id="element-137">
-              {initials}
-            </div>
-          </div>
-        </header>
-
         {/* Page Content */}
         <main className="flex-1 overflow-y-auto bg-white" data-id="element-138">
           <Outlet data-id="element-139" />

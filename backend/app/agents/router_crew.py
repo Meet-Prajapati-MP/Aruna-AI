@@ -40,10 +40,6 @@ ROUTER PATTERN (this file):
 import os
 from typing import Optional
 
-try:
-    from pydantic.v1 import SecretStr   # pydantic v2 installed (langchain uses v1 shim)
-except ImportError:
-    from pydantic import SecretStr      # pydantic v1 installed directly
 from app.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -64,7 +60,7 @@ def _make_llm(temperature: float = 0.3):
     """
     from langchain_openai import ChatOpenAI  # ① deferred import
 
-    api_key = SecretStr(os.environ.get("OPENROUTER_API_KEY", ""))  # ②
+    api_key = os.environ.get("OPENROUTER_API_KEY", "")  # ②
     base_url = os.environ.get("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
 
     return ChatOpenAI(                                   # ③
@@ -79,7 +75,7 @@ def _make_strong_llm(temperature: float = 0.5):
     """Stronger model for actual answering tasks."""
     from langchain_openai import ChatOpenAI
 
-    api_key = SecretStr(os.environ.get("OPENROUTER_API_KEY", ""))
+    api_key = os.environ.get("OPENROUTER_API_KEY", "")
     base_url = os.environ.get("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
 
     return ChatOpenAI(
