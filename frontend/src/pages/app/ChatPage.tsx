@@ -253,7 +253,7 @@ export function ChatPage() {
 
   return <div className="flex h-full bg-white relative overflow-hidden" data-id="element-423">
     {/* Main Chat Area */}
-    <div className={`flex flex-col flex-1 transition-all duration-300 ${isRightPanelOpen ? 'mr-80' : ''}`} data-id="element-424">
+    <div className={`flex flex-col flex-1 transition-all duration-300 pb-36 ${isRightPanelOpen ? 'mr-80' : ''}`} data-id="element-424">
       {/* Chat Header — compresses to slim bar on scroll */}
       <div className={`flex-shrink-0 border-b border-border bg-white/90 backdrop-blur-sm z-10 flex flex-col transition-all duration-300 ${headerCompressed ? 'px-6 py-2 gap-0' : 'px-6 py-4 gap-3'}`} data-id="element-425">
         {/* Top Row: Title & Controls */}
@@ -329,7 +329,7 @@ export function ChatPage() {
       </div>
 
       {/* Messages Area */}
-      <div ref={messagesScrollRef} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-8 pb-72" data-id="element-468">
+      <div ref={messagesScrollRef} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-8 pb-8" data-id="element-468">
 
         {/* Empty state */}
         {messages.length === 0 && (
@@ -373,9 +373,9 @@ export function ChatPage() {
           return (
             <div key={msg.id} className="flex justify-start" data-id="element-472">
               <div className="flex gap-3 w-full max-w-full" data-id="element-473">
-                <div className={`w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center mt-1 shadow-sm transition-colors duration-300 ${msg.taskStatus === 'queued' || msg.taskStatus === 'running' ? 'bg-white border border-border' : 'bg-primary text-white'}`} data-id="element-474">
+                <div className="w-8 h-8 rounded-lg bg-primary flex-shrink-0 flex items-center justify-center mt-1 shadow-sm text-white" data-id="element-474">
                   {msg.taskStatus === 'queued' || msg.taskStatus === 'running'
-                    ? <Loader2Icon className="w-4 h-4 animate-spin text-primary" />
+                    ? <Loader2Icon className="w-4 h-4 animate-spin" />
                     : <SparklesIcon className="w-4 h-4" data-id="element-475" />}
                 </div>
 
