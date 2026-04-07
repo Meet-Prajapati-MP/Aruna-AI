@@ -80,7 +80,7 @@ function CyclingStatus() {
   const [idx, setIdx] = useState(0);
 
   useEffect(() => {
-    const t = setInterval(() => setIdx(i => (i + 1) % STATUS_CYCLE.length), 2200);
+    const t = setInterval(() => setIdx(i => (i + 1) % STATUS_CYCLE.length), 5000);
     return () => clearInterval(t);
   }, []);
 
@@ -122,47 +122,46 @@ const StreamingMarkdown = memo(function StreamingMarkdown({
   text: string;
   isStreaming: boolean;
 }) {
-  const [displayed, setDisplayed] = useState('');
-  // tracks actual chars on screen — updated every tick, not just at interval end
-  const displayedLenRef = useRef(0);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // How many chars are currently visible on screen
+  const [revealedCount, setRevealedCount] = useState(0);
 
+  // Always-current refs — read inside the interval without stale closures
+  const textRef = useRef(text);
+  const isStreamingRef = useRef(isStreaming);
+  const revealedRef = useRef(0);
+
+  // Keep refs in sync with props on every render
+  useEffect(() => { textRef.current = text; }, [text]);
+  useEffect(() => { isStreamingRef.current = isStreaming; }, [isStreaming]);
+
+  // Single interval that lives for the component's lifetime.
+  // It reads the latest text/isStreaming via refs, so it never needs to restart
+  // when new poll results arrive — it just keeps counting forward.
   useEffect(() => {
-    // Stop any in-progress stream first
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-
-    // Only stream chars we haven't shown yet
-    const startFrom = displayedLenRef.current;
-    if (text.length <= startFrom) return;
-
-    let i = 0;
-    const CHUNK = 8;  // chars per tick → ~500 chars/sec at 16ms tick
+    const CHUNK = 8;  // chars per tick → ~500 chars/sec at 16ms
     const TICK  = 16;
 
-    timerRef.current = setInterval(() => {
-      i = Math.min(i + CHUNK, text.length - startFrom);
-      const next = text.slice(0, startFrom + i);
-      displayedLenRef.current = startFrom + i;
-      setDisplayed(next);
-      if (startFrom + i >= text.length) {
-        clearInterval(timerRef.current!);
-        timerRef.current = null;
+    const id = window.setInterval(() => {
+      const target = textRef.current.length;
+
+      if (revealedRef.current < target) {
+        // Advance typewriter
+        const next = Math.min(revealedRef.current + CHUNK, target);
+        revealedRef.current = next;
+        setRevealedCount(next);
+      } else if (!isStreamingRef.current) {
+        // Fully revealed and task is done — stop polling
+        clearInterval(id);
       }
+      // If fully revealed but still streaming: stay alive — more text may arrive
     }, TICK);
 
-    return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
-    };
-  }, [text]);
+    return () => clearInterval(id);
+  }, []); // mount once, never restarts
 
-  // Show cursor while: task still running OR typewriter hasn't caught up yet
-  const showCursor = isStreaming || displayed.length < text.length;
+  const displayed = text.slice(0, revealedCount);
+  // Show cursor while typewriter is catching up OR more text may still arrive
+  const showCursor = revealedCount < text.length || isStreaming;
 
   return (
     <div className="prose prose-base max-w-none
