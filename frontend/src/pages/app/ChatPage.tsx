@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useRef, useCallback, memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLocation } from 'react-router-dom';
 import { SendIcon, PaperclipIcon, HeartIcon, CheckCircle2Icon, BrainCircuitIcon, ListTodoIcon, SparklesIcon, MoreVerticalIcon, BriefcaseIcon, GlobeIcon, FileTextIcon, FolderIcon, SearchIcon, ChevronDownIcon, SquareIcon, RotateCwIcon, PanelRightCloseIcon, PanelRightOpenIcon, FileIcon, ImageIcon, Loader2Icon, AlertCircleIcon } from 'lucide-react';
@@ -71,6 +71,73 @@ const FILE_LIST = [{
   name: 'Trustopay Business Plan.pdf',
   type: 'pdf'
 }];
+
+// ── Streaming markdown renderer ───────────────────────────────────────────────
+// Reveals text progressively so the answer feels like it's being typed live.
+
+const StreamingMarkdown = memo(function StreamingMarkdown({
+  text,
+  isStreaming,
+}: {
+  text: string;
+  isStreaming: boolean;
+}) {
+  const [displayed, setDisplayed] = useState('');
+  const prevTextRef = useRef('');
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    const newChars = text.slice(prevTextRef.current.length);
+    if (!newChars) return;
+
+    if (timerRef.current) clearInterval(timerRef.current);
+
+    let i = 0;
+    const CHUNK = 6;   // chars per tick
+    const TICK  = 12;  // ms — adjust for speed
+
+    timerRef.current = setInterval(() => {
+      i = Math.min(i + CHUNK, newChars.length);
+      setDisplayed(prevTextRef.current + newChars.slice(0, i));
+      if (i >= newChars.length) {
+        prevTextRef.current = text;
+        if (timerRef.current) clearInterval(timerRef.current);
+      }
+    }, TICK);
+
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, [text]);
+
+  const showCursor = isStreaming || displayed.length < text.length;
+
+  return (
+    <div className="prose prose-base max-w-none
+      prose-headings:font-bold prose-headings:text-text-primary prose-headings:tracking-tight
+      prose-h1:text-2xl prose-h1:mt-8 prose-h1:mb-4 prose-h1:border-b prose-h1:border-border/60 prose-h1:pb-3
+      prose-h2:text-xl prose-h2:mt-7 prose-h2:mb-3
+      prose-h3:text-lg prose-h3:mt-5 prose-h3:mb-2
+      prose-h4:text-base prose-h4:mt-4 prose-h4:mb-1.5
+      prose-p:text-text-primary prose-p:leading-7 prose-p:my-3
+      prose-li:text-text-primary prose-li:leading-7 prose-li:my-1
+      prose-ul:my-3 prose-ol:my-3 prose-ul:space-y-1 prose-ol:space-y-1
+      prose-strong:text-text-primary prose-strong:font-semibold
+      prose-em:text-text-secondary
+      prose-code:bg-slate-100 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-sm prose-code:font-mono
+      prose-pre:bg-slate-900 prose-pre:text-slate-100 prose-pre:rounded-xl prose-pre:p-5 prose-pre:my-4
+      prose-blockquote:border-l-4 prose-blockquote:border-primary/40 prose-blockquote:pl-4 prose-blockquote:italic prose-blockquote:text-text-secondary prose-blockquote:my-4
+      prose-hr:border-border prose-hr:my-6
+      prose-table:text-sm prose-th:font-semibold prose-th:text-text-primary prose-td:text-text-primary">
+      <ReactMarkdown remarkPlugins={[remarkGfm]}>{displayed || ''}</ReactMarkdown>
+      {showCursor && (
+        <motion.span
+          className="inline-block w-0.5 h-4 bg-primary/70 ml-0.5 align-middle"
+          animate={{ opacity: [1, 0, 1] }}
+          transition={{ duration: 0.8, repeat: Infinity }}
+        />
+      )}
+    </div>
+  );
+});
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -173,7 +240,7 @@ export function ChatPage() {
         clearInterval(interval);
         setIsRunning(false);
       }
-    }, 3000);
+    }, 1500);
 
     return () => clearInterval(interval);
   }, [pendingMsg?.taskId]);
@@ -370,9 +437,10 @@ export function ChatPage() {
           const step3Spinning = msg.taskStatus === 'running';
           const step3Done = ['completed', 'failed'].includes(msg.taskStatus ?? '');
 
-          const isLoading = msg.taskStatus === 'queued' || msg.taskStatus === 'running';
           const isFailed = msg.taskStatus === 'failed';
           const result = msg.result ?? '';
+          // Show loading UI only when no result yet; once text starts arriving, show it immediately
+          const isLoading = (msg.taskStatus === 'queued' || msg.taskStatus === 'running') && !result;
 
           return (
             <div key={msg.id} className="flex justify-start" data-id="element-472">
@@ -433,28 +501,11 @@ export function ChatPage() {
                       <span className="text-sm leading-relaxed">{msg.error ?? 'Task failed. Please try again.'}</span>
                     </div>
                   ) : result ? (
-                    <motion.div
-                      initial={{ opacity: 0, y: 6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.25 }}
-                      className="prose prose-base max-w-none
-                        prose-headings:font-bold prose-headings:text-text-primary prose-headings:tracking-tight
-                        prose-h1:text-2xl prose-h1:mt-8 prose-h1:mb-4 prose-h1:border-b prose-h1:border-border/60 prose-h1:pb-3
-                        prose-h2:text-xl prose-h2:mt-7 prose-h2:mb-3
-                        prose-h3:text-lg prose-h3:mt-5 prose-h3:mb-2
-                        prose-h4:text-base prose-h4:mt-4 prose-h4:mb-1.5
-                        prose-p:text-text-primary prose-p:leading-7 prose-p:my-3
-                        prose-li:text-text-primary prose-li:leading-7 prose-li:my-1
-                        prose-ul:my-3 prose-ol:my-3 prose-ul:space-y-1 prose-ol:space-y-1
-                        prose-strong:text-text-primary prose-strong:font-semibold
-                        prose-em:text-text-secondary
-                        prose-code:bg-slate-100 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-sm prose-code:font-mono
-                        prose-pre:bg-slate-900 prose-pre:text-slate-100 prose-pre:rounded-xl prose-pre:p-5 prose-pre:my-4
-                        prose-blockquote:border-l-4 prose-blockquote:border-primary/40 prose-blockquote:pl-4 prose-blockquote:italic prose-blockquote:text-text-secondary prose-blockquote:my-4
-                        prose-hr:border-border prose-hr:my-6
-                        prose-table:text-sm prose-th:font-semibold prose-th:text-text-primary prose-td:text-text-primary">
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>{result}</ReactMarkdown>
-                    </motion.div>
+                    /* Show result as soon as any text is available — streams in progressively */
+                    <StreamingMarkdown
+                      text={result}
+                      isStreaming={msg.taskStatus === 'running'}
+                    />
                   ) : (
                     <div className="flex items-center gap-2 text-text-muted">
                       {[0,1,2].map(i => (
