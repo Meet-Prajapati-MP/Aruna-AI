@@ -1,11 +1,59 @@
-import React, { useState, memo } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
-import { UserIcon, PaletteIcon, BellIcon, BrainCircuitIcon, LinkIcon, SparklesIcon, CalendarIcon, CheckSquareIcon, MailIcon, MicIcon, WatchIcon } from 'lucide-react';
+import { UserIcon, PaletteIcon, BellIcon, BrainCircuitIcon, LinkIcon, SparklesIcon, CalendarIcon, CheckSquareIcon, MailIcon, MicIcon, WatchIcon, CameraIcon, CheckIcon, LoaderIcon } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+
 export function SettingsPage() {
+  const { user, updateProfile, uploadAvatar } = useAuth();
   const [activeTab, setActiveTab] = useState('profile');
+
+  // Profile form state
+  const fullName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || '';
+  const email = user?.email || '';
+  const avatarUrl = user?.user_metadata?.avatar_url as string | undefined;
+  const initials = fullName.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2) || 'U';
+
+  const [nameValue, setNameValue] = useState(fullName);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(avatarUrl ?? null);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    // Show local preview immediately
+    setAvatarPreview(URL.createObjectURL(file));
+    setUploadingAvatar(true);
+    setError(null);
+    try {
+      await uploadAvatar(file);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Avatar upload failed.');
+      setAvatarPreview(avatarUrl ?? null);
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    setError(null);
+    try {
+      await updateProfile(nameValue);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save changes.');
+    } finally {
+      setSaving(false);
+    }
+  };
   const tabs = [{
     id: 'profile',
     label: 'Profile',
@@ -53,49 +101,87 @@ export function SettingsPage() {
         {/* Content Area */}
         <div className="flex-1" data-id="element-1269">
           <Card padding="lg" className="min-h-[400px]" data-id="element-1270">
-            {activeTab === 'profile' && <motion.div initial={{
-            opacity: 0
-          }} animate={{
-            opacity: 1
-          }} className="space-y-6" data-id="element-1271">
-                <div data-id="element-1272">
-                  <h2 className="text-lg font-medium text-text-primary mb-4" data-id="element-1273">
-                    Profile Information
-                  </h2>
-                  <div className="flex items-center gap-6 mb-6" data-id="element-1274">
-                    <div className="w-20 h-20 rounded-full bg-rose-light/30 border-2 border-rose-light/50 flex items-center justify-center text-primary-dark font-serif text-2xl" data-id="element-1275">
-                      AL
-                    </div>
-                    <div data-id="element-1276">
-                      <Button variant="outline" size="sm" data-id="element-1277">
-                        Change Avatar
-                      </Button>
-                      <p className="text-xs text-text-muted mt-2" data-id="element-1278">
-                        JPG, GIF or PNG. Max size of 2MB.
-                      </p>
-                    </div>
+            {activeTab === 'profile' && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+                <h2 className="text-lg font-medium text-text-primary">Profile Information</h2>
+
+                {/* Avatar */}
+                <div className="flex items-center gap-6">
+                  <div className="relative group">
+                    {avatarPreview ? (
+                      <img
+                        src={avatarPreview}
+                        alt="Avatar"
+                        className="w-20 h-20 rounded-full object-cover border-2 border-rose-light/50"
+                      />
+                    ) : (
+                      <div className="w-20 h-20 rounded-full bg-rose-light/30 border-2 border-rose-light/50 flex items-center justify-center text-primary-dark font-serif text-2xl">
+                        {initials}
+                      </div>
+                    )}
+                    {/* Overlay on hover */}
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                    >
+                      {uploadingAvatar
+                        ? <LoaderIcon className="w-6 h-6 text-white animate-spin" />
+                        : <CameraIcon className="w-6 h-6 text-white" />
+                      }
+                    </button>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/gif,image/webp"
+                      className="hidden"
+                      onChange={handleAvatarChange}
+                    />
+                  </div>
+                  <div>
+                    <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
+                      {uploadingAvatar ? 'Uploading…' : 'Change Avatar'}
+                    </Button>
+                    <p className="text-xs text-text-muted mt-2">JPG, GIF or PNG. Max size of 2MB.</p>
                   </div>
                 </div>
 
-                <div className="grid gap-4 max-w-md" data-id="element-1279">
-                  <div data-id="element-1280">
-                    <label className="block text-sm font-medium text-text-secondary mb-1" data-id="element-1281">
-                      Full Name
-                    </label>
-                    <input type="text" defaultValue="Alex Doe" className="w-full bg-white border border-border rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary" data-id="element-1282" />
+                {/* Fields */}
+                <div className="grid gap-4 max-w-md">
+                  <div>
+                    <label className="block text-sm font-medium text-text-secondary mb-1">Full Name</label>
+                    <input
+                      type="text"
+                      value={nameValue}
+                      onChange={e => setNameValue(e.target.value)}
+                      className="w-full bg-white border border-border rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                    />
                   </div>
-                  <div data-id="element-1283">
-                    <label className="block text-sm font-medium text-text-secondary mb-1" data-id="element-1284">
-                      Email Address
-                    </label>
-                    <input type="email" defaultValue="alex@example.com" className="w-full bg-white border border-border rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary" data-id="element-1285" />
+                  <div>
+                    <label className="block text-sm font-medium text-text-secondary mb-1">Email Address</label>
+                    <input
+                      type="email"
+                      value={email}
+                      disabled
+                      className="w-full bg-warm-white border border-border rounded-xl px-4 py-2 text-sm text-text-muted cursor-not-allowed"
+                    />
+                    <p className="text-xs text-text-muted mt-1">Email cannot be changed here.</p>
                   </div>
                 </div>
 
-                <div className="pt-4 border-t border-border/50" data-id="element-1286">
-                  <Button data-id="element-1287">Save Changes</Button>
+                {error && (
+                  <p className="text-sm text-red-500 bg-red-50 border border-red-100 rounded-xl px-4 py-2">{error}</p>
+                )}
+
+                <div className="pt-4 border-t border-border/50">
+                  <Button onClick={handleSave} disabled={saving || saved}>
+                    {saved
+                      ? <><CheckIcon className="w-4 h-4 mr-1.5" />Saved</>
+                      : saving ? 'Saving…' : 'Save Changes'
+                    }
+                  </Button>
                 </div>
-              </motion.div>}
+              </motion.div>
+            )}
 
             {activeTab === 'memory' && <motion.div initial={{
             opacity: 0

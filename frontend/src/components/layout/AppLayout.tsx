@@ -22,6 +22,7 @@ export function AppLayout() {
   const { user } = useAuth();
   const fullName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
   const initials = fullName.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
+  const avatarUrl = user?.user_metadata?.avatar_url as string | undefined;
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -178,9 +179,13 @@ export function AppLayout() {
         {/* Profile — pinned at very bottom, matches reference */}
         <div className="flex items-center justify-between bg-white border border-border/50 rounded-xl px-3 py-2.5 mb-3 cursor-pointer hover:border-primary/30 transition-colors">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-full bg-rose-light/30 border border-rose-light/50 flex items-center justify-center text-primary-dark font-heading font-bold text-xs flex-shrink-0">
-              {initials}
-            </div>
+            {avatarUrl ? (
+              <img src={avatarUrl} alt={fullName} className="w-8 h-8 rounded-full object-cover border border-rose-light/50 flex-shrink-0" />
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-rose-light/30 border border-rose-light/50 flex items-center justify-center text-primary-dark font-heading font-bold text-xs flex-shrink-0">
+                {initials}
+              </div>
+            )}
             <div className="flex flex-col min-w-0">
               <span className="text-sm font-semibold text-text-primary leading-tight truncate">{fullName}</span>
               <span className="text-[10px] text-text-muted">Personal Workspace</span>

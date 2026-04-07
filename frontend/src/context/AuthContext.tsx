@@ -2,15 +2,6 @@
  * context/AuthContext.tsx
  * ────────────────────────
  * Global authentication state for the entire app.
- *
- * FIX F5: Creates the missing auth context with:
- * - Real Supabase session management
- * - Token persisted across page reloads (Supabase does this natively)
- * - User object available throughout the app
- * - login / signup / logout functions
- *
- * Usage:
- *   const { user, login, logout, isLoading } = useAuth();
  */
 
 import React, {
@@ -30,6 +21,8 @@ interface AuthContextValue {
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string, fullName: string) => Promise<void>;
   logout: () => Promise<void>;
+  updateProfile: (fullName: string) => Promise<void>;
+  uploadAvatar: (file: File) => Promise<string>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -40,14 +33,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Restore session from localStorage on mount
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
       setUser(data.session?.user ?? null);
       setIsLoading(false);
     });
 
-    // Listen for auth state changes (login, logout, token refresh)
     const { data: listener } = supabase.auth.onAuthStateChange(
       (_event, newSession) => {
         setSession(newSession);
@@ -76,8 +67,48 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
   };
 
+  /** Update full_name in Supabase user_metadata and refresh local state. */
+  const updateProfile = async (fullName: string) => {
+    const { data, error } = await supabase.auth.updateUser({
+      data: { full_name: fullName },
+    });
+    if (error) throw new Error(error.message);
+    if (data.user) setUser(data.user);
+  };
+
+  /**
+   * Upload an avatar image to the "avatars" Storage bucket, store the
+   * public URL in user_metadata.avatar_url, and return the URL.
+   */
+  const uploadAvatar = async (file: File): Promise<string> => {
+    if (!user) throw new Error('Not authenticated');
+
+    const ext = file.name.split('.').pop();
+    const path = `${user.id}/avatar.${ext}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('avatars')
+      .upload(path, file, { upsert: true });
+
+    if (uploadError) throw new Error(uploadError.message);
+
+    const { data: urlData } = supabase.storage
+      .from('avatars')
+      .getPublicUrl(path);
+
+    const avatarUrl = urlData.publicUrl;
+
+    const { data, error: updateError } = await supabase.auth.updateUser({
+      data: { avatar_url: avatarUrl },
+    });
+    if (updateError) throw new Error(updateError.message);
+    if (data.user) setUser(data.user);
+
+    return avatarUrl;
+  };
+
   return (
-    <AuthContext.Provider value={{ user, session, isLoading, login, signup, logout }}>
+    <AuthContext.Provider value={{ user, session, isLoading, login, signup, logout, updateProfile, uploadAvatar }}>
       {children}
     </AuthContext.Provider>
   );
