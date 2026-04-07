@@ -123,31 +123,45 @@ const StreamingMarkdown = memo(function StreamingMarkdown({
   isStreaming: boolean;
 }) {
   const [displayed, setDisplayed] = useState('');
-  const prevTextRef = useRef('');
+  // tracks actual chars on screen — updated every tick, not just at interval end
+  const displayedLenRef = useRef(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    const newChars = text.slice(prevTextRef.current.length);
-    if (!newChars) return;
+    // Stop any in-progress stream first
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
 
-    if (timerRef.current) clearInterval(timerRef.current);
+    // Only stream chars we haven't shown yet
+    const startFrom = displayedLenRef.current;
+    if (text.length <= startFrom) return;
 
     let i = 0;
-    const CHUNK = 6;   // chars per tick
-    const TICK  = 12;  // ms — adjust for speed
+    const CHUNK = 8;  // chars per tick → ~500 chars/sec at 16ms tick
+    const TICK  = 16;
 
     timerRef.current = setInterval(() => {
-      i = Math.min(i + CHUNK, newChars.length);
-      setDisplayed(prevTextRef.current + newChars.slice(0, i));
-      if (i >= newChars.length) {
-        prevTextRef.current = text;
-        if (timerRef.current) clearInterval(timerRef.current);
+      i = Math.min(i + CHUNK, text.length - startFrom);
+      const next = text.slice(0, startFrom + i);
+      displayedLenRef.current = startFrom + i;
+      setDisplayed(next);
+      if (startFrom + i >= text.length) {
+        clearInterval(timerRef.current!);
+        timerRef.current = null;
       }
     }, TICK);
 
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
   }, [text]);
 
+  // Show cursor while: task still running OR typewriter hasn't caught up yet
   const showCursor = isStreaming || displayed.length < text.length;
 
   return (
