@@ -380,47 +380,9 @@ export function ChatPage() {
 
                 {/* ── Agent header row ── */}
                 <div className="flex items-center gap-2.5">
-                  {/* Aruna logo — rays animate when loading */}
-                  <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center shadow-sm flex-shrink-0">
-                    <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none">
-                      {Array.from({ length: 8 }).map((_, i) => {
-                        const angle = (i * 45 * Math.PI) / 180;
-                        const cx = 12, cy = 12;
-                        const longR = 9, shortR = 5;
-                        const delays = [0, 0.3, 0.15, 0.45, 0.08, 0.35, 0.22, 0.52];
-                        const durations = [1.6, 1.9, 1.5, 2.0, 1.7, 1.4, 1.8, 1.6];
-                        return (
-                          <motion.line
-                            key={i}
-                            x1={cx} y1={cy}
-                            x2={cx + Math.cos(angle) * longR}
-                            y2={cy + Math.sin(angle) * longR}
-                            stroke="white"
-                            strokeWidth="1.6"
-                            strokeLinecap="round"
-                            animate={isLoading ? {
-                              x2: [
-                                cx + Math.cos(angle) * longR,
-                                cx + Math.cos(angle) * shortR,
-                                cx + Math.cos(angle) * longR,
-                              ],
-                              y2: [
-                                cy + Math.sin(angle) * longR,
-                                cy + Math.sin(angle) * shortR,
-                                cy + Math.sin(angle) * longR,
-                              ],
-                              opacity: [1, 0.45, 1],
-                            } : { x2: cx + Math.cos(angle) * longR, y2: cy + Math.sin(angle) * longR, opacity: 1 }}
-                            transition={isLoading ? {
-                              duration: durations[i],
-                              repeat: Infinity,
-                              delay: delays[i],
-                              ease: 'easeInOut',
-                            } : {}}
-                          />
-                        );
-                      })}
-                    </svg>
+                  {/* Static brown logo */}
+                  <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center shadow-sm flex-shrink-0 text-white">
+                    <SparklesIcon className="w-3.5 h-3.5" />
                   </div>
                   <span className="font-semibold text-sm text-text-primary">Aruna</span>
                   {msg.agentLabel && (
@@ -439,9 +401,38 @@ export function ChatPage() {
                           ? `${msg.agentLabel} is working on your task...`
                           : 'Routing your request to the best specialist agent...'}
                       </p>
-                      <span className="text-xs text-text-muted">
-                        {msg.taskStatus === 'queued' ? 'Thinking...' : 'Working...'}
-                      </span>
+                      {/* Animated star beside status text */}
+                      <div className="flex items-center gap-1.5">
+                        <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 flex-shrink-0" fill="none">
+                          {Array.from({ length: 8 }).map((_, i) => {
+                            const angle = (i * 45 * Math.PI) / 180;
+                            const cx = 12, cy = 12;
+                            const longR = 9, shortR = 4.5;
+                            const delays  = [0, 0.3, 0.15, 0.45, 0.08, 0.35, 0.22, 0.52];
+                            const durations = [1.6, 1.9, 1.5, 2.0, 1.7, 1.4, 1.8, 1.6];
+                            return (
+                              <motion.line
+                                key={i}
+                                x1={cx} y1={cy}
+                                x2={cx + Math.cos(angle) * longR}
+                                y2={cy + Math.sin(angle) * longR}
+                                stroke="#6B1D2A"
+                                strokeWidth="1.8"
+                                strokeLinecap="round"
+                                animate={{
+                                  x2: [cx + Math.cos(angle)*longR, cx + Math.cos(angle)*shortR, cx + Math.cos(angle)*longR],
+                                  y2: [cy + Math.sin(angle)*longR, cy + Math.sin(angle)*shortR, cy + Math.sin(angle)*longR],
+                                  opacity: [1, 0.4, 1],
+                                }}
+                                transition={{ duration: durations[i], repeat: Infinity, delay: delays[i], ease: 'easeInOut' }}
+                              />
+                            );
+                          })}
+                        </svg>
+                        <span className="text-xs text-text-muted">
+                          {msg.taskStatus === 'queued' ? 'Thinking...' : 'Working...'}
+                        </span>
+                      </div>
                     </div>
                   ) : isFailed ? (
                     <div className="flex items-start gap-3 text-red-500 bg-red-50 border border-red-100 rounded-xl p-4">
