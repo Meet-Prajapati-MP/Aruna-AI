@@ -104,6 +104,7 @@ export function ChatPage() {
   const menuRef = useRef<HTMLDivElement>(null);
   const modelMenuRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const msgCountRef = useRef(0);
 
   // The latest AI message that is still in-flight
   const pendingMsg = messages.findLast(m => m.role === 'ai' && ['queued', 'running'].includes(m.taskStatus ?? ''));
@@ -133,9 +134,12 @@ export function ChatPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // ── Scroll to bottom on new messages ────────────────────────────────────────
+  // ── Scroll to bottom only when a new message is added (not on poll updates) ──
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messages.length > msgCountRef.current) {
+      msgCountRef.current = messages.length;
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
   }, [messages]);
 
   // ── Auto-submit task passed from home page ───────────────────────────────────
@@ -325,7 +329,7 @@ export function ChatPage() {
       </div>
 
       {/* Messages Area */}
-      <div ref={messagesScrollRef} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-8 pb-40" data-id="element-468">
+      <div ref={messagesScrollRef} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-8 pb-56" data-id="element-468">
 
         {/* Empty state */}
         {messages.length === 0 && (
